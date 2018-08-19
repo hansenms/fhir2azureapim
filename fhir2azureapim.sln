@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fhir2apim", "src\fhir2apim\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fhir2apimlib", "src\fhir2apimlib\fhir2apimlib.csproj", "{D441D1C5-91E7-4322-B8FF-6BD8A3DE9D98}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{F243E975-7A03-4C33-8902-EB767EEC8E28}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fhir2apimlib.Tests", "test\fhir2apimlib.Tests\fhir2apimlib.Tests.csproj", "{9541B8D4-869A-4686-B495-B31D61FDFB43}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,9 +50,22 @@ Global
 		{D441D1C5-91E7-4322-B8FF-6BD8A3DE9D98}.Release|x64.Build.0 = Release|Any CPU
 		{D441D1C5-91E7-4322-B8FF-6BD8A3DE9D98}.Release|x86.ActiveCfg = Release|Any CPU
 		{D441D1C5-91E7-4322-B8FF-6BD8A3DE9D98}.Release|x86.Build.0 = Release|Any CPU
+		{9541B8D4-869A-4686-B495-B31D61FDFB43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9541B8D4-869A-4686-B495-B31D61FDFB43}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9541B8D4-869A-4686-B495-B31D61FDFB43}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9541B8D4-869A-4686-B495-B31D61FDFB43}.Debug|x64.Build.0 = Debug|Any CPU
+		{9541B8D4-869A-4686-B495-B31D61FDFB43}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9541B8D4-869A-4686-B495-B31D61FDFB43}.Debug|x86.Build.0 = Debug|Any CPU
+		{9541B8D4-869A-4686-B495-B31D61FDFB43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9541B8D4-869A-4686-B495-B31D61FDFB43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9541B8D4-869A-4686-B495-B31D61FDFB43}.Release|x64.ActiveCfg = Release|Any CPU
+		{9541B8D4-869A-4686-B495-B31D61FDFB43}.Release|x64.Build.0 = Release|Any CPU
+		{9541B8D4-869A-4686-B495-B31D61FDFB43}.Release|x86.ActiveCfg = Release|Any CPU
+		{9541B8D4-869A-4686-B495-B31D61FDFB43}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4A8D62D3-69E3-450E-AEDC-3B1D06917C72} = {97C7451C-3016-4F5C-BAE1-7C45BE9B69C0}
 		{D441D1C5-91E7-4322-B8FF-6BD8A3DE9D98} = {97C7451C-3016-4F5C-BAE1-7C45BE9B69C0}
+		{9541B8D4-869A-4686-B495-B31D61FDFB43} = {F243E975-7A03-4C33-8902-EB767EEC8E28}
 	EndGlobalSection
 EndGlobal
