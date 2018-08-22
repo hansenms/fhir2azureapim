@@ -85,6 +85,7 @@ namespace fhir2apimlib
                     info.version = "Unspecified"; //TODO: Get the version from conformance statement
                     swagger.info = info;
 
+                    //TODO: Add patch operation
                     foreach (JObject r in conformance.rest[0].resource)
                     {
                         string typeName = (string)r["type"];
@@ -134,14 +135,35 @@ namespace fhir2apimlib
                         }
                         
 
+                        if (interaction.Contains("vread"))
+                        {
+                            JObject historyObj = JObject.Parse("{}");
+                            historyObj["parameters"] = JArray.Parse("[{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}]");
+                            ((JArray)historyObj["parameters"]).Add(JObject.Parse("{\"in\": \"path\", \"name\": \"vid\", \"required\": true, \"type\": \"string\"}")); 
+                            swagger.paths[instancePath + "/_history/{vid}"] = JObject.Parse("{}");
+                            swagger.paths[instancePath + "/_history/{vid}"]["get"] = historyObj;
+                            swagger.paths[instancePath + "/_history/{vid}"]["get"]["responses"] = JObject.Parse("{\"200\": { \"schema\": {$ref: \"#/definitions/" + typeName + "\"}}}"); 
+                        }
+
                         if (interaction.Contains("history-instance"))
                         {
                             JObject historyObj = JObject.Parse("{}");
                             historyObj["parameters"] = JArray.Parse("[{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}]");
-                            ((JArray)historyObj["parameters"]).Add(JArray.Parse("[{\"in\": \"query\", \"name\": \"_count\", \"type\": \"string\"}]")); 
-                            ((JArray)historyObj["parameters"]).Add(JArray.Parse("[{\"in\": \"query\", \"name\": \"_since\", \"type\": \"string\"}]")); 
+                            ((JArray)historyObj["parameters"]).Add(JObject.Parse("{\"in\": \"query\", \"name\": \"_count\", \"type\": \"string\"}")); 
+                            ((JArray)historyObj["parameters"]).Add(JObject.Parse("{\"in\": \"query\", \"name\": \"_since\", \"type\": \"string\"}")); 
                             swagger.paths[instancePath + "/_history"] = JObject.Parse("{}");
                             swagger.paths[instancePath + "/_history"]["get"] = historyObj;
+                        }
+
+
+                        if (interaction.Contains("history-type"))
+                        {
+                            JObject historyObj = JObject.Parse("{}");
+                            historyObj["parameters"] = JArray.Parse("[]");
+                            ((JArray)historyObj["parameters"]).Add(JObject.Parse("{\"in\": \"query\", \"name\": \"_count\", \"type\": \"string\"}")); 
+                            ((JArray)historyObj["parameters"]).Add(JObject.Parse("{\"in\": \"query\", \"name\": \"_since\", \"type\": \"string\"}")); 
+                            swagger.paths[typePath + "/_history"] = JObject.Parse("{}");
+                            swagger.paths[typePath + "/_history"]["get"] = historyObj;
                         }
 
                         if (interaction.Contains("create"))
@@ -163,6 +185,12 @@ namespace fhir2apimlib
                             param["schema"] = JObject.Parse("{$ref: \"#/definitions/" + typeName + "\"}");
                             ((JArray)swagger.paths[instancePath]["put"]["parameters"]).Add(param);
                             ((JArray)swagger.paths[instancePath]["put"]["parameters"]).Add(JObject.Parse("{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}"));
+                        }
+
+                        if (interaction.Contains("delete"))
+                        {
+                            swagger.paths[instancePath]["delete"] = JObject.Parse("{\"parameters\": [], \"responses\": {\"200\": {\"description\": \"success\"}}}");
+                            swagger.paths[instancePath]["delete"]["parameters"] = JArray.Parse("[{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}]");
                         }
                     }
                 }
