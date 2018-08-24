@@ -56,7 +56,10 @@ namespace fhir2apimlib
 
         }
 
-        public static async Task<string> GetSwaggerFromMetadata(string fhirServerUrl, string metadataEndpoint, string version = null)
+        public static async Task<string> GetSwaggerFromMetadata(string fhirServerUrl, 
+                                                                string metadataEndpoint, 
+                                                                string[] interactionList, 
+                                                                string version = null)
         {
 
             Uri fhirServer = new Uri(fhirServerUrl);
@@ -80,9 +83,9 @@ namespace fhir2apimlib
                     dynamic conformance = JObject.Parse(await response.Content.ReadAsStringAsync());
 
                     dynamic info = JObject.Parse("{}");
-                    info.description = "A FHIR API";
-                    info.title = String.IsNullOrEmpty(conformance.id) ? "Untitled" :  conformance.id;
-                    info.version = "Unspecified"; //TODO: Get the version from conformance statement
+                    info.description = conformance.implementation.description;
+                    info.title = conformance.publisher;
+                    info.version = conformance.fhirVersion;
                     swagger.info = info;
 
                     //TODO: Add patch operation
@@ -98,7 +101,7 @@ namespace fhir2apimlib
                         swagger.paths[typePath] = JObject.Parse("{}");
                         swagger.paths[instancePath] = JObject.Parse("{}");
 
-                        if (interaction.Contains("search-type"))
+                        if (interaction.Contains("search-type") && (interactionList.Contains("all") || interactionList.Contains("search-type")))
                         {
                             JObject searchObj = new JObject();
 
@@ -125,7 +128,7 @@ namespace fhir2apimlib
                             swagger.paths[typePath]["get"] = searchObj;
                         }
                         
-                        if (interaction.Contains("read")) 
+                        if (interaction.Contains("read") && (interactionList.Contains("all") || interactionList.Contains("read"))) 
                         {
                             JObject readobj = JObject.Parse("{}");
                             readobj["parameters"] = JArray.Parse("[{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}]"); 
@@ -134,8 +137,7 @@ namespace fhir2apimlib
                             swagger.paths[instancePath]["get"]["responses"] = JObject.Parse("{\"200\": { \"schema\": {$ref: \"#/definitions/" + typeName + "\"}}}"); 
                         }
                         
-
-                        if (interaction.Contains("vread"))
+                        if (interaction.Contains("vread")  && (interactionList.Contains("all") || interactionList.Contains("vread")))
                         {
                             JObject historyObj = JObject.Parse("{}");
                             historyObj["parameters"] = JArray.Parse("[{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}]");
@@ -145,7 +147,7 @@ namespace fhir2apimlib
                             swagger.paths[instancePath + "/_history/{vid}"]["get"]["responses"] = JObject.Parse("{\"200\": { \"schema\": {$ref: \"#/definitions/" + typeName + "\"}}}"); 
                         }
 
-                        if (interaction.Contains("history-instance"))
+                        if (interaction.Contains("history-instance")  && (interactionList.Contains("all") || interactionList.Contains("history-instance")))
                         {
                             JObject historyObj = JObject.Parse("{}");
                             historyObj["parameters"] = JArray.Parse("[{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}]");
@@ -156,7 +158,7 @@ namespace fhir2apimlib
                         }
 
 
-                        if (interaction.Contains("history-type"))
+                        if (interaction.Contains("history-type") && (interactionList.Contains("all") || interactionList.Contains("history-type")))
                         {
                             JObject historyObj = JObject.Parse("{}");
                             historyObj["parameters"] = JArray.Parse("[]");
@@ -166,7 +168,7 @@ namespace fhir2apimlib
                             swagger.paths[typePath + "/_history"]["get"] = historyObj;
                         }
 
-                        if (interaction.Contains("create"))
+                        if (interaction.Contains("create")  && (interactionList.Contains("all") || interactionList.Contains("create")))
                         {
                             swagger.paths[typePath]["post"] = JObject.Parse("{\"parameters\": [], \"responses\": {\"200\": {\"description\": \"success\"}}}");
                             JObject param = new JObject();
@@ -176,7 +178,7 @@ namespace fhir2apimlib
                             ((JArray)swagger.paths[typePath]["post"]["parameters"]).Add(param);
                         }
 
-                        if (interaction.Contains("update"))
+                        if (interaction.Contains("update")  && (interactionList.Contains("all") || interactionList.Contains("update")))
                         {
                             swagger.paths[instancePath]["put"] = JObject.Parse("{\"parameters\": [], \"responses\": {\"200\": {\"description\": \"success\"}}}");
                             JObject param = new JObject();
@@ -187,7 +189,7 @@ namespace fhir2apimlib
                             ((JArray)swagger.paths[instancePath]["put"]["parameters"]).Add(JObject.Parse("{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}"));
                         }
 
-                        if (interaction.Contains("delete"))
+                        if (interaction.Contains("delete")  && (interactionList.Contains("all") || interactionList.Contains("delete")))
                         {
                             swagger.paths[instancePath]["delete"] = JObject.Parse("{\"parameters\": [], \"responses\": {\"200\": {\"description\": \"success\"}}}");
                             swagger.paths[instancePath]["delete"]["parameters"] = JArray.Parse("[{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}]");
