@@ -41,6 +41,8 @@ namespace fhir2apimweb
                 app.UseHttpsRedirection();
             }
 
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
             app.UseMvc();
         }
     }
