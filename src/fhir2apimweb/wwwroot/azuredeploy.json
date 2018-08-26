@@ -2,6 +2,13 @@
     "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+       "apimServiceName": {
+        "type": "string",
+        "defaultValue": "GENERATE",
+        "metadata": {
+            "description": "Name of API Management Instance. Must be unique. If set to GENERATE, a unique name will be generated."
+        }
+       },
        "fhirServerUrl": {
         "type": "string",
         "minLength": 1,
@@ -60,8 +67,8 @@
       }
     },
     "variables": {
-      "apiManagementServiceName": "[concat('apiservice', uniqueString(resourceGroup().id))]",
-      "apiManagementApiName": "[concat(variables('apiManagementServiceName'),'/apis/FHIRAPI')]",
+      "apiManagementServiceName": "[if(equals(parameters('apimServiceName'),'GENERATE'), concat('fhirapiservice', uniqueString(resourceGroup().id)), parameters('apimServiceName'))]",
+      "apiManagementApiName": "[concat(variables('apiManagementServiceName'),'/FHIRAPI')]",
       "interactionList": "[if(equals(parameters('sku'),'Premium'),'all','search,search-type,read,create')]",
       "swaggerUrl": "[concat(parameters('fhirSwaggerConverterUrl'),'/api/Swagger?fhirserver=',parameters('fhirServerUrl'),'&interaction_list=', variables('interactionList'))]"
     },
