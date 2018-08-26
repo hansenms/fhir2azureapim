@@ -38,9 +38,9 @@ namespace fhir2apimweb
             else
             {
                 app.UseHsts();
+                app.UseHttpsRedirection();
             }
 
-            app.UseHttpsRedirection();
             app.UseMvc();
         }
     }
