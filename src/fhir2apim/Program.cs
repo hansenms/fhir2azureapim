@@ -29,7 +29,8 @@ namespace fhir2apim
                 return;
             }
 
-            string swagger = await Fhir2Apim.GetSwaggerFromMetadata(fhirServerUrl, metadataEndpoint, interactionList);
+            //string swagger = await Fhir2Apim.GetSwaggerFromMetadata(fhirServerUrl, metadataEndpoint, interactionList);
+            string swagger = await Fhir2Apim.GetArmApiFromMetadata(fhirServerUrl, metadataEndpoint, interactionList);
 
             System.IO.File.WriteAllText($"{outFileName}", swagger);
             Console.WriteLine("Done");
