@@ -9,7 +9,7 @@ namespace fhir2apimweb.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class Swagger : ControllerBase
+    public class Arm : ControllerBase
     {
         [HttpGet]
         public async Task<ActionResult> Get(string fhirserver, string metadata_endpoint, 
@@ -34,10 +34,10 @@ namespace fhir2apimweb.Controllers
                 resourceList = resource_list.Split(",");
             }
 
-            string swagger = await Fhir2Apim.GetSwaggerFromMetadata(fhirserver, metadataEndpoint, interactionList, resourceList);
+            string arm = await Fhir2Apim.GetArmApiFromMetadata(fhirserver, metadataEndpoint, interactionList, resourceList);
 
             return new ContentResult() {
-                Content = swagger,
+                Content = arm,
                 StatusCode = 200,
                 ContentType = "application/json"
             };
