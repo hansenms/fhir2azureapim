@@ -64,13 +64,28 @@
           "metadata": {
               "description": "URL for server providing conformance statement to Swagger file conversion service"
           }
+      },
+      "interactionList":
+      {
+        "type": "string",
+        "defaultValue": "all",
+        "metadata": {
+          "description": "Comma separated list of FHIR interactions to include. Defaults to all"
+        }
+      },
+      "resourceList":
+      {
+        "type": "string",
+        "defaultValue": "all",
+        "metadata": {
+          "description": "Comma separated list of FHIR resource to include. Defaults to all"
+        }
       }
     },
     "variables": {
       "apiManagementServiceName": "[if(equals(parameters('apimServiceName'),'GENERATE'), concat('fhirapiservice', uniqueString(resourceGroup().id)), parameters('apimServiceName'))]",
       "apiManagementApiName": "[concat(variables('apiManagementServiceName'),'/FHIRAPI')]",
-      "interactionList": "[if(equals(parameters('sku'),'Premium'),'all','search,search-type,read,create')]",
-      "swaggerUrl": "[concat(parameters('fhirSwaggerConverterUrl'),'/api/Swagger?fhirserver=',parameters('fhirServerUrl'),'&interaction_list=', variables('interactionList'))]"
+      "swaggerUrl": "[concat(parameters('fhirSwaggerConverterUrl'),'/api/Swagger?fhirserver=',parameters('fhirServerUrl'),'&interaction_list=', parameters('interactionList'), '&resource_list=', parameters('resourceList'))]"
     },
     "resources": [
       {
