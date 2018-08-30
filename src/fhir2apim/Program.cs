@@ -12,39 +12,89 @@ namespace fhir2apim
             string fhirServerUrl = null;
             string metadataEndpoint = "metadata?_format=json";
             string outFileName = "out.json";
+            string format = "swagger";
 
             string[] interactionList = { "all" };
             string[] resourceList = { "all" };
 
-            if (args.Length > 0) {
-                fhirServerUrl = args[0];
+            int arg = 0;
+            while (arg < args.Length)
+            {
+                if (args[arg] == "-s" || args[arg] == "--server")
+                {
+                    arg++;
+                    fhirServerUrl = args[arg++];
+                }
+                else if (args[arg] == "-m" || args[arg] == "--meta")  
+                {
+                    arg++;
+                    metadataEndpoint = args[arg++]; 
+                } 
+                else if (args[arg] == "-o" || args[arg] == "--out")
+                {
+                    arg++;
+                    outFileName = args[arg++];
+                }
+                else if (args[arg] == "-r" || args[arg] == "--resources")
+                {
+                    arg++;
+                    resourceList = args[arg++].Split(",");
+                }
+                else if (args[arg] == "-i" || args[arg] == "--interactions")
+                {
+                    arg++;
+                    interactionList = args[arg++].Split(",");
+                }
+                else if (args[arg] == "-f" || args[arg] == "--format")
+                {
+                    arg++;
+                    if (args[arg] != "swagger" && args[arg] != "arm")
+                    {
+                        Console.WriteLine("Valid formats are 'swagger' or 'arm'");
+                        PrintUsage();
+                        return;
+                    }
+                    format = args[arg++];
+                }
+                else
+                {
+                    Console.WriteLine($"Unknow command line argument: {args[arg]}");
+                    PrintUsage();
+                    return;
+                }
             }
 
-            if (args.Length > 1) {
-                resourceList = args[1].Split(",");
-            }
-
-            if (args.Length > 2) {
-                interactionList = args[1].Split(",");
-            }
 
             if (String.IsNullOrEmpty(fhirServerUrl))
             {
+                Console.WriteLine("No FHIR server URL provided");
                 PrintUsage();
                 return;
             }
 
-            //string swagger = await Fhir2Apim.GetSwaggerFromMetadata(fhirServerUrl, metadataEndpoint, interactionList);
-            string swagger = await Fhir2Apim.GetArmApiFromMetadata(fhirServerUrl, metadataEndpoint, interactionList, resourceList);
+            string output = null;
 
-            System.IO.File.WriteAllText($"{outFileName}", swagger);
-            Console.WriteLine("Done");
+            if (format == "swagger")
+            {
+                output = await Fhir2Apim.GetSwaggerFromMetadata(fhirServerUrl, metadataEndpoint, interactionList, resourceList);
+            }
+            else
+            {
+                output = await Fhir2Apim.GetArmApiFromMetadata(fhirServerUrl, metadataEndpoint, interactionList, resourceList);
+            }
+
+            System.IO.File.WriteAllText($"{outFileName}", output);
         }
 
         public static void PrintUsage()
         {
             Console.WriteLine("Usage:");
-            Console.WriteLine("  fhir2apim <fhirServerUrl>");
+            Console.WriteLine("  fhir2apim -s|--server <FHIR SERVER URL>");
+            Console.WriteLine("            -m|--meta <METADATA ENDPOINT> (default: 'metadata?_format=json')");
+            Console.WriteLine("            -o|--out <OUTFILE> (default: 'out.json')");
+            Console.WriteLine("            -r|--resources <LIST OF RESOURCES> (default: 'all')");
+            Console.WriteLine("            -i|--rinteractions <LIST OF INTERACTIONS> (default: 'all')");
+            Console.WriteLine("            -f|--format <swagger|arm> (default: 'swagger')");
         }
     }
 }
