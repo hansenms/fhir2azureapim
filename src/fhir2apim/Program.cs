@@ -11,15 +11,20 @@ namespace fhir2apim
         {
             string fhirServerUrl = null;
             string metadataEndpoint = "metadata?_format=json";
-            string outFileName = "swagger.json";
+            string outFileName = "out.json";
 
             string[] interactionList = { "all" };
+            string[] resourceList = { "all" };
 
             if (args.Length > 0) {
                 fhirServerUrl = args[0];
             }
 
             if (args.Length > 1) {
+                resourceList = args[1].Split(",");
+            }
+
+            if (args.Length > 2) {
                 interactionList = args[1].Split(",");
             }
 
@@ -30,7 +35,7 @@ namespace fhir2apim
             }
 
             //string swagger = await Fhir2Apim.GetSwaggerFromMetadata(fhirServerUrl, metadataEndpoint, interactionList);
-            string swagger = await Fhir2Apim.GetArmApiFromMetadata(fhirServerUrl, metadataEndpoint, interactionList);
+            string swagger = await Fhir2Apim.GetArmApiFromMetadata(fhirServerUrl, metadataEndpoint, interactionList, resourceList);
 
             System.IO.File.WriteAllText($"{outFileName}", swagger);
             Console.WriteLine("Done");

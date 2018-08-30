@@ -79,13 +79,19 @@ namespace fhir2apimlib
             return api;
         }
 
-        public static JObject ArmApiOperation(string urlTemplate, string method)
+        public static JObject ArmApiOperation(string urlTemplate, string method, string previousOpName = null)
         {
             JObject op = JObject.Parse("{}");
             op["apiVersion"] = "2017-03-01";
             op["type"] = "operations";
             op["name"] = Guid.NewGuid();
             op["dependsOn"] = JArray.Parse("[\"[resourceId(resourceGroup().name, 'Microsoft.ApiManagement/service/apis', parameters('apimInstanceName'), 'fhirapi')]\"]");
+
+            if (!String.IsNullOrEmpty(previousOpName))
+            {
+                ((JArray)op["dependsOn"]).Add("[concat('Microsoft.ApiManagement/service/', parameters('apimInstanceName'), '/apis/fhirapi/operations/" + previousOpName + "')]");
+            }
+
             op["properties"] = JObject.Parse("{}");
             op["properties"]["urlTemplate"] = urlTemplate;
             op["properties"]["templateParameters"] = JArray.Parse("[]");
@@ -125,7 +131,8 @@ namespace fhir2apimlib
 
         public static async Task<string> GetArmApiFromMetadata(string fhirServerUrl,
                                                                string metadataEndpoint,
-                                                               string[] interactionList)
+                                                               string[] interactionList,
+                                                               string[] resourceList)
         {
             JObject template = JObject.Parse("{\"$schema\": \"http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#\", \"contentVersion\": \"1.0.0.0\", \"parameters\": {}, \"resources\": []}");
 
@@ -146,11 +153,19 @@ namespace fhir2apimlib
 
                     api["properties"]["description"] = conformance.implementation.description;
 
+                    string previousOpName = null;
+
                     //TODO: Add patch operation
                     foreach (JObject r in conformance.rest[0].resource)
                     {
 
                         string typeName = (string)r["type"];
+
+                        if (!(resourceList.Contains("all") || resourceList.Contains(typeName)))
+                        {
+                            continue;
+                        }
+
                         var interaction = ((JArray)r["interaction"]).Select(i => (string)i["code"]).ToArray();
 
                         string typePath = "/" + typeName;
@@ -158,68 +173,76 @@ namespace fhir2apimlib
 
                         if (interaction.Contains("search-type") && (interactionList.Contains("all") || interactionList.Contains("search-type")))
                         {
-                            var op = ArmApiOperation(typePath, "GET");
+                            var op = ArmApiOperation(typePath, "GET", previousOpName);
                             foreach (JObject s in (JArray)r["searchParam"]) 
                             {
                                 ((JArray)op["properties"]["request"]["queryParameters"]).Add(ArmApiOperationQueryParameter((string)s["name"], GetTypeFromTypeName((string)s["name"]), (string)s["documentation"]));
                             }
                             ((JArray)api["resources"]).Add(op);
+                            previousOpName = (string)op["name"];
                         }
 
                         if (interaction.Contains("read") && (interactionList.Contains("all") || interactionList.Contains("read"))) 
                         {
-                            var op = ArmApiOperation(instancePath, "GET");
+                            var op = ArmApiOperation(instancePath, "GET", previousOpName);
                             ((JArray)op["properties"]["templateParameters"]).Add(ArmApiOperationTemplateParameter("id"));
                             ((JArray)api["resources"]).Add(op);
+                            previousOpName = (string)op["name"];
                         }
 
 
                         if (interaction.Contains("vread")  && (interactionList.Contains("all") || interactionList.Contains("vread")))
                         {
-                            var op = ArmApiOperation(instancePath + "/_history/{vid}", "GET");
+                            var op = ArmApiOperation(instancePath + "/_history/{vid}", "GET", previousOpName);
                             ((JArray)op["properties"]["templateParameters"]).Add(ArmApiOperationTemplateParameter("id"));
                             ((JArray)op["properties"]["templateParameters"]).Add(ArmApiOperationTemplateParameter("vid"));
                             ((JArray)api["resources"]).Add(op);
+                            previousOpName = (string)op["name"];
                         }
 
                         if (interaction.Contains("history-instance")  && (interactionList.Contains("all") || interactionList.Contains("history-instance")))
                         {
-                            var op = ArmApiOperation(instancePath + "/_history", "GET");
+                            var op = ArmApiOperation(instancePath + "/_history", "GET", previousOpName);
                             ((JArray)op["properties"]["templateParameters"]).Add(ArmApiOperationTemplateParameter("id"));
                             ((JArray)op["properties"]["request"]["queryParameters"]).Add(ArmApiOperationQueryParameter("_count", "string"));
                             ((JArray)op["properties"]["request"]["queryParameters"]).Add(ArmApiOperationQueryParameter("_since", "string"));
                             ((JArray)api["resources"]).Add(op);
+                            previousOpName = (string)op["name"];
                         }
 
 
                         if (interaction.Contains("history-type") && (interactionList.Contains("all") || interactionList.Contains("history-type")))
                         {
-                            var op = ArmApiOperation(typePath + "/_history", "GET");
+                            var op = ArmApiOperation(typePath + "/_history", "GET", previousOpName);
                             ((JArray)op["properties"]["request"]["queryParameters"]).Add(ArmApiOperationQueryParameter("_count", "string"));
                             ((JArray)op["properties"]["request"]["queryParameters"]).Add(ArmApiOperationQueryParameter("_since", "string"));
                             ((JArray)api["resources"]).Add(op);
+                            previousOpName = (string)op["name"];
                         }
 
                         if (interaction.Contains("create")  && (interactionList.Contains("all") || interactionList.Contains("create")))
                         {
-                            var op = ArmApiOperation(typePath, "POST");
+                            var op = ArmApiOperation(typePath, "POST", previousOpName);
                             ((JArray)op["properties"]["request"]["representations"]).Add(ArmApiOperationRepresentation());
                             ((JArray)api["resources"]).Add(op);
+                            previousOpName = (string)op["name"];
                         }
 
                         if (interaction.Contains("update")  && (interactionList.Contains("all") || interactionList.Contains("update")))
                         {
-                            var op = ArmApiOperation(instancePath, "PUT");
+                            var op = ArmApiOperation(instancePath, "PUT", previousOpName);
                             ((JArray)op["properties"]["templateParameters"]).Add(ArmApiOperationTemplateParameter("id"));
                             ((JArray)op["properties"]["request"]["representations"]).Add(ArmApiOperationRepresentation());
                             ((JArray)api["resources"]).Add(op);
+                            previousOpName = (string)op["name"];
                         }
 
                         if (interaction.Contains("delete")  && (interactionList.Contains("all") || interactionList.Contains("delete")))
                         {
-                            var op = ArmApiOperation(instancePath, "DELETE");
+                            var op = ArmApiOperation(instancePath, "DELETE", previousOpName);
                             ((JArray)op["properties"]["templateParameters"]).Add(ArmApiOperationTemplateParameter("id"));
                             ((JArray)api["resources"]).Add(op);
+                            previousOpName = (string)op["name"];
                         }
                     }
                 }
@@ -237,7 +260,8 @@ namespace fhir2apimlib
 
         public static async Task<string> GetSwaggerFromMetadata(string fhirServerUrl, 
                                                                 string metadataEndpoint, 
-                                                                string[] interactionList, 
+                                                                string[] interactionList,
+                                                                string[] resourceList, 
                                                                 string schemaVersion = null)
         {
 
@@ -271,11 +295,15 @@ namespace fhir2apimlib
                     foreach (JObject r in conformance.rest[0].resource)
                     {
                         string typeName = (string)r["type"];
-                        var interaction = ((JArray)r["interaction"]).Select(i => (string)i["code"]).ToArray();
 
+                        if (!(resourceList.Contains("all") || resourceList.Contains(typeName)))
+                        {
+                            continue;
+                        }
+
+                        var interaction = ((JArray)r["interaction"]).Select(i => (string)i["code"]).ToArray();
                         string typePath = "/" + typeName;
                         string instancePath =  "/" + typeName + "/{id}";
-
 
                         swagger.paths[typePath] = JObject.Parse("{}");
                         swagger.paths[instancePath] = JObject.Parse("{}");
