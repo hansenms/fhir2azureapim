@@ -12,11 +12,6 @@ namespace fhir2apimlib
 {
     public class Fhir2Apim
     {
-        public static bool SimpleFunction()
-        {
-            return true;
-        }
-
         public static JObject ArmParameter(string typeName, string defaultValue = null)
         {
             JObject parm = JObject.Parse("{ \"type\": \"" + typeName + "\"}");
@@ -42,7 +37,7 @@ namespace fhir2apimlib
 
         public static JObject ArmApiOperation(string urlTemplate, string method, string previousOpName = null)
         {
-            JObject op = JObject.Parse("{}");
+            JObject op = new JObject();
             op["apiVersion"] = "2017-03-01";
             op["type"] = "operations";
             op["name"] = Guid.NewGuid();
@@ -53,9 +48,9 @@ namespace fhir2apimlib
                 ((JArray)op["dependsOn"]).Add("[concat('Microsoft.ApiManagement/service/', parameters('apimInstanceName'), '/apis/fhirapi/operations/" + previousOpName + "')]");
             }
 
-            op["properties"] = JObject.Parse("{}");
+            op["properties"] =  new JObject();
             op["properties"]["urlTemplate"] = urlTemplate;
-            op["properties"]["templateParameters"] = JArray.Parse("[]");
+            op["properties"]["templateParameters"] = new JArray();
             op["properties"]["method"] = method;
             op["properties"]["displayName"] = $"{urlTemplate} - {method}";
             op["properties"]["request"] = JObject.Parse("{\"queryParameters\": [], \"representations\": []}");
@@ -65,7 +60,7 @@ namespace fhir2apimlib
 
         public static JObject ArmApiOperationQueryParameter(string name, string typeName, string description = "")
         {
-            JObject parm = JObject.Parse("{}");
+            JObject parm = new JObject();
             parm["name"] = name;
             parm["type"] = typeName;
             parm["description"] = description;
@@ -74,7 +69,7 @@ namespace fhir2apimlib
 
         public static JObject ArmApiOperationRepresentation(string typeName = "Body")
         {
-            JObject rep = JObject.Parse("{}");
+            JObject rep = new JObject();
             rep["contentType"] = "application/json";
             rep["typeName"] = typeName;
             return rep;
@@ -112,7 +107,7 @@ namespace fhir2apimlib
                     response.EnsureSuccessStatusCode();
                     dynamic conformance = JObject.Parse(await response.Content.ReadAsStringAsync());
 
-                    api["properties"]["description"] = conformance.implementation.description;
+                    api["properties"]["description"] = conformance.software.name;
 
                     string previousOpName = null;
 
@@ -135,9 +130,12 @@ namespace fhir2apimlib
                         if (interaction.Contains("search-type") && (interactionList.Contains("all") || interactionList.Contains("search-type")))
                         {
                             var op = ArmApiOperation(typePath, "GET", previousOpName);
-                            foreach (JObject s in (JArray)r["searchParam"])
+                            if (r["searchParam"] != null) 
                             {
-                                ((JArray)op["properties"]["request"]["queryParameters"]).Add(ArmApiOperationQueryParameter((string)s["name"], GetTypeFromTypeName((string)s["name"]), (string)s["documentation"]));
+                                foreach (JObject s in (JArray)r["searchParam"])
+                                {
+                                    ((JArray)op["properties"]["request"]["queryParameters"]).Add(ArmApiOperationQueryParameter((string)s["name"], GetTypeFromTypeName((string)s["name"]), (string)s["documentation"]));
+                                }
                             }
                             ((JArray)api["resources"]).Add(op);
                             previousOpName = (string)op["name"];
