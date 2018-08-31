@@ -293,7 +293,7 @@ namespace fhir2apimlib
                     response.EnsureSuccessStatusCode();
                     dynamic conformance = JObject.Parse(await response.Content.ReadAsStringAsync());
 
-                    swagger["info"]["description"] = conformance.implementation.description;
+                    swagger["info"]["description"] = conformance.software.name;
                     swagger["info"]["title"] = conformance.publisher;
                     swagger["info"]["version"] = conformance.fhirVersion;
 
@@ -318,17 +318,20 @@ namespace fhir2apimlib
                         {
                             JObject searchObj = SwaggerOperation();
 
-                            foreach (JObject s in (JArray)r["searchParam"])
+                            if (r["searchParam"] != null)
                             {
-                                JObject p = SwaggerParameter(
-                                    (string)s["name"],
-                                    "query",
-                                    GetTypeFromTypeName((string)s["name"]),
-                                    (string)s["documentation"], false,
-                                    (string)s["type"] == "date" ? "date" : null
-                                    );
+                                foreach (JObject s in (JArray)r["searchParam"])
+                                {
+                                    JObject p = SwaggerParameter(
+                                        (string)s["name"],
+                                        "query",
+                                        GetTypeFromTypeName((string)s["name"]),
+                                        (string)s["documentation"], false,
+                                        (string)s["type"] == "date" ? "date" : null
+                                        );
 
-                                ((JArray)searchObj["parameters"]).Add(p);
+                                    ((JArray)searchObj["parameters"]).Add(p);
+                                }
                             }
 
                             JObject formatParameter = SwaggerParameter("_format", "query", "string", "Output formatting");

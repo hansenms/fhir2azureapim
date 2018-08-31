@@ -5,7 +5,6 @@ This project contains utilities and services for deploying [Azure API Management
 
 To Do List
 ----------
-* Write unit tests (started).
 * Enable deployment to existing APIM Service.
 * Make sure API has meaningful name.
 * Add API to product.
