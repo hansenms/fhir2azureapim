@@ -17,45 +17,6 @@ namespace fhir2apimlib
             return true;
         }
 
-        public static string GetFhirUrl(string version = null)
-        {
-            if (String.IsNullOrEmpty(version))
-            {
-                return "https://hl7.org/fhir/";
-            }
-            else
-            {
-                return $"https://hl7.org/fhir/{version}/";
-            }
-        }
-        public static async Task<JSchema> GetFhirSchema(string version = null)
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                try
-                {
-                    client.BaseAddress = new Uri(GetFhirUrl(version));
-                    HttpResponseMessage response = await client.GetAsync("fhir.schema.json");
-                    response.EnsureSuccessStatusCode();
-                    string schema = await response.Content.ReadAsStringAsync();
-
-                    //For some reason the official FHIR schema uses typographical/curly quotation marks in some instances.
-                    schema = schema.Replace("“", "\\\"");
-                    schema = schema.Replace("”", "\\\"");
-
-                    return JSchema.Parse(schema);
-                }
-                catch (HttpRequestException e)
-                {
-                    Console.WriteLine("\nException Caught!");
-                    Console.WriteLine("Message :{0} ", e.Message);
-                }
-            }
-
-            return JSchema.Parse("{}");
-
-        }
-
         public static JObject ArmParameter(string typeName, string defaultValue = null)
         {
             JObject parm = JObject.Parse("{ \"type\": \"" + typeName + "\"}");
@@ -169,12 +130,12 @@ namespace fhir2apimlib
                         var interaction = ((JArray)r["interaction"]).Select(i => (string)i["code"]).ToArray();
 
                         string typePath = "/" + typeName;
-                        string instancePath =  "/" + typeName + "/{id}";
+                        string instancePath = "/" + typeName + "/{id}";
 
                         if (interaction.Contains("search-type") && (interactionList.Contains("all") || interactionList.Contains("search-type")))
                         {
                             var op = ArmApiOperation(typePath, "GET", previousOpName);
-                            foreach (JObject s in (JArray)r["searchParam"]) 
+                            foreach (JObject s in (JArray)r["searchParam"])
                             {
                                 ((JArray)op["properties"]["request"]["queryParameters"]).Add(ArmApiOperationQueryParameter((string)s["name"], GetTypeFromTypeName((string)s["name"]), (string)s["documentation"]));
                             }
@@ -182,7 +143,7 @@ namespace fhir2apimlib
                             previousOpName = (string)op["name"];
                         }
 
-                        if (interaction.Contains("read") && (interactionList.Contains("all") || interactionList.Contains("read"))) 
+                        if (interaction.Contains("read") && (interactionList.Contains("all") || interactionList.Contains("read")))
                         {
                             var op = ArmApiOperation(instancePath, "GET", previousOpName);
                             ((JArray)op["properties"]["templateParameters"]).Add(ArmApiOperationTemplateParameter("id"));
@@ -191,7 +152,7 @@ namespace fhir2apimlib
                         }
 
 
-                        if (interaction.Contains("vread")  && (interactionList.Contains("all") || interactionList.Contains("vread")))
+                        if (interaction.Contains("vread") && (interactionList.Contains("all") || interactionList.Contains("vread")))
                         {
                             var op = ArmApiOperation(instancePath + "/_history/{vid}", "GET", previousOpName);
                             ((JArray)op["properties"]["templateParameters"]).Add(ArmApiOperationTemplateParameter("id"));
@@ -200,7 +161,7 @@ namespace fhir2apimlib
                             previousOpName = (string)op["name"];
                         }
 
-                        if (interaction.Contains("history-instance")  && (interactionList.Contains("all") || interactionList.Contains("history-instance")))
+                        if (interaction.Contains("history-instance") && (interactionList.Contains("all") || interactionList.Contains("history-instance")))
                         {
                             var op = ArmApiOperation(instancePath + "/_history", "GET", previousOpName);
                             ((JArray)op["properties"]["templateParameters"]).Add(ArmApiOperationTemplateParameter("id"));
@@ -220,7 +181,7 @@ namespace fhir2apimlib
                             previousOpName = (string)op["name"];
                         }
 
-                        if (interaction.Contains("create")  && (interactionList.Contains("all") || interactionList.Contains("create")))
+                        if (interaction.Contains("create") && (interactionList.Contains("all") || interactionList.Contains("create")))
                         {
                             var op = ArmApiOperation(typePath, "POST", previousOpName);
                             ((JArray)op["properties"]["request"]["representations"]).Add(ArmApiOperationRepresentation());
@@ -228,7 +189,7 @@ namespace fhir2apimlib
                             previousOpName = (string)op["name"];
                         }
 
-                        if (interaction.Contains("update")  && (interactionList.Contains("all") || interactionList.Contains("update")))
+                        if (interaction.Contains("update") && (interactionList.Contains("all") || interactionList.Contains("update")))
                         {
                             var op = ArmApiOperation(instancePath, "PUT", previousOpName);
                             ((JArray)op["properties"]["templateParameters"]).Add(ArmApiOperationTemplateParameter("id"));
@@ -237,7 +198,7 @@ namespace fhir2apimlib
                             previousOpName = (string)op["name"];
                         }
 
-                        if (interaction.Contains("delete")  && (interactionList.Contains("all") || interactionList.Contains("delete")))
+                        if (interaction.Contains("delete") && (interactionList.Contains("all") || interactionList.Contains("delete")))
                         {
                             var op = ArmApiOperation(instancePath, "DELETE", previousOpName);
                             ((JArray)op["properties"]["templateParameters"]).Add(ArmApiOperationTemplateParameter("id"));
@@ -258,23 +219,72 @@ namespace fhir2apimlib
             return JsonConvert.SerializeObject(template, Formatting.Indented);
         }
 
-        public static async Task<string> GetSwaggerFromMetadata(string fhirServerUrl, 
-                                                                string metadataEndpoint, 
+        public static JObject SwaggerOperation()
+        {
+            JObject op = new JObject();
+            op["parameters"] = new JArray();
+            op["responses"] = JObject.Parse("{\"200\": { \"description\": \"Success\"}}");
+            return op;
+        }
+
+        public static JObject SwaggerParameter(
+            string name,
+            string inName,
+            string typeName = null,
+            string description = null,
+            bool required = false,
+            string format = null)
+        {
+            JObject parm = new JObject();
+            parm["name"] = name;
+
+            if (!String.IsNullOrEmpty(typeName))
+            {
+                parm["type"] = typeName;
+            }
+
+            parm["in"] = inName;
+
+            if (!String.IsNullOrEmpty(description))
+            {
+                parm["description"] = description;
+            }
+
+            if (required)
+            {
+                parm["required"] = required;
+            }
+
+            if (!String.IsNullOrEmpty(format))
+            {
+                parm["format"] = format;
+            }
+
+            return parm;
+        }
+
+        public static JObject SwaggerApi(Uri fhirServer)
+        {
+            JObject swagger = new JObject();
+            swagger["swagger"] = "2.0";
+            swagger["host"] = fhirServer.Host;
+            swagger["basePath"] = fhirServer.AbsolutePath;
+            swagger["paths"] = new JObject();
+            swagger["info"] = new JObject();
+            swagger["paths"]["/metadata"] = JObject.Parse("{\"get\": {\"summary\": \"Get conformance statement.\", \"produces\": [\"application/json\",\"application/xml\"], \"responses\": { \"200\": { \"description\": \"Success\"}}}}");
+            swagger["schemes"] = JArray.Parse($"[\"{fhirServer.Scheme}\"]");
+            return swagger;
+        }
+
+        public static async Task<string> GetSwaggerFromMetadata(string fhirServerUrl,
+                                                                string metadataEndpoint,
                                                                 string[] interactionList,
-                                                                string[] resourceList, 
-                                                                string schemaVersion = null)
+                                                                string[] resourceList)
         {
 
             Uri fhirServer = new Uri(fhirServerUrl);
 
-            dynamic swagger = new JObject();
-            swagger.swagger = "2.0";            
-            swagger.host = fhirServer.Host;
-            swagger.basePath = fhirServer.AbsolutePath;
-
-            swagger.paths = JObject.Parse("{\"/metadata\": {\"get\": {\"summary\": \"Get conformance statement.\", \"produces\": [\"application/json\",\"application/xml\"], \"responses\": { \"200\": { \"description\": \"Success\"}}}}}");
-
-            swagger.schemes = JArray.Parse($"[\"{fhirServer.Scheme}\"]");
+            JObject swagger = SwaggerApi(fhirServer);
 
             using (HttpClient client = new HttpClient())
             {
@@ -285,11 +295,9 @@ namespace fhir2apimlib
                     response.EnsureSuccessStatusCode();
                     dynamic conformance = JObject.Parse(await response.Content.ReadAsStringAsync());
 
-                    dynamic info = JObject.Parse("{}");
-                    info.description = conformance.implementation.description;
-                    info.title = conformance.publisher;
-                    info.version = conformance.fhirVersion;
-                    swagger.info = info;
+                    swagger["info"]["description"] = conformance.implementation.description;
+                    swagger["info"]["title"] = conformance.publisher;
+                    swagger["info"]["version"] = conformance.fhirVersion;
 
                     //TODO: Add patch operation
                     foreach (JObject r in conformance.rest[0].resource)
@@ -303,143 +311,91 @@ namespace fhir2apimlib
 
                         var interaction = ((JArray)r["interaction"]).Select(i => (string)i["code"]).ToArray();
                         string typePath = "/" + typeName;
-                        string instancePath =  "/" + typeName + "/{id}";
+                        string instancePath = "/" + typeName + "/{id}";
 
-                        swagger.paths[typePath] = JObject.Parse("{}");
-                        swagger.paths[instancePath] = JObject.Parse("{}");
+                        swagger["paths"][typePath] = new JObject();
+                        swagger["paths"][instancePath] = new JObject();
 
                         if (interaction.Contains("search-type") && (interactionList.Contains("all") || interactionList.Contains("search-type")))
                         {
-                            JObject searchObj = new JObject();
+                            JObject searchObj = SwaggerOperation();
 
-                            searchObj["parameters"] = new JArray();
-                            foreach (JObject s in (JArray)r["searchParam"]) 
+                            foreach (JObject s in (JArray)r["searchParam"])
                             {
-                                JObject p = new JObject();
-                                p["name"] = (string)s["name"];
-                                p["type"] = GetTypeFromTypeName((string)s["name"]);
-                                p["in"] = "query";
-                                p["description"] = (string)s["documentation"];
-
-                                if ((string)s["type"] == "date") 
-                                {
-                                    p["format"] = "date";
-                                }
+                                JObject p = SwaggerParameter(
+                                    (string)s["name"],
+                                    "query",
+                                    GetTypeFromTypeName((string)s["name"]),
+                                    (string)s["documentation"], false,
+                                    (string)s["type"] == "date" ? "date" : null
+                                    );
 
                                 ((JArray)searchObj["parameters"]).Add(p);
                             }
 
-                            ((JArray)searchObj["parameters"]).Add(JObject.Parse("{\"name\": \"_format\", \"in\": \"query\", \"type\": \"string\", \"x-consoleDefault\": \"application/json\"}"));
-                            
-                            if (String.IsNullOrEmpty(schemaVersion))
-                            { 
-                                searchObj["responses"] =  JObject.Parse("{\"200\": { \"description\": \"Success\"}}");
-                            } 
-                            else 
-                            {
-                                searchObj["responses"] =  JObject.Parse("{\"200\": { \"schema\": {$ref: \"#/definitions/" + typeName + "\"}}}");
-                            }
+                            JObject formatParameter = SwaggerParameter("_format", "query", "string", "Output formatting");
+                            formatParameter["x-consoleDefault"] = "application/json";
+                            ((JArray)searchObj["parameters"]).Add(formatParameter);
 
-                            swagger.paths[typePath]["get"] = searchObj;
+                            swagger["paths"][typePath]["get"] = searchObj;
                         }
-                        
-                        if (interaction.Contains("read") && (interactionList.Contains("all") || interactionList.Contains("read"))) 
+
+                        if (interaction.Contains("read") && (interactionList.Contains("all") || interactionList.Contains("read")))
                         {
-                            JObject readobj = JObject.Parse("{}");
-                            readobj["parameters"] = JArray.Parse("[{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}]"); 
-                            
-                            swagger.paths[instancePath]["get"] = readobj;
-
-                            if (String.IsNullOrEmpty(schemaVersion))
-                            {
-                                swagger.paths[instancePath]["get"]["responses"] = JObject.Parse("{\"200\": { \"description\": \"Success\"}}"); 
-                            }
-                            else
-                            {
-                                swagger.paths[instancePath]["get"]["responses"] = JObject.Parse("{\"200\": { \"schema\": {$ref: \"#/definitions/" + typeName + "\"}}}"); 
-                            }
+                            JObject readobj = SwaggerOperation();
+                            ((JArray)readobj["parameters"]).Add(SwaggerParameter("id", "path", "string", "id of resource", true));
+                            swagger["paths"][instancePath]["get"] = readobj;
                         }
-                        
-                        if (interaction.Contains("vread")  && (interactionList.Contains("all") || interactionList.Contains("vread")))
+
+                        if (interaction.Contains("vread") && (interactionList.Contains("all") || interactionList.Contains("vread")))
                         {
-                            JObject historyObj = JObject.Parse("{}");
-                            historyObj["parameters"] = JArray.Parse("[{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}]");
-                            ((JArray)historyObj["parameters"]).Add(JObject.Parse("{\"in\": \"path\", \"name\": \"vid\", \"required\": true, \"type\": \"string\"}")); 
-                            swagger.paths[instancePath + "/_history/{vid}"] = JObject.Parse("{}");
-                            swagger.paths[instancePath + "/_history/{vid}"]["get"] = historyObj;
-
-                            if (String.IsNullOrEmpty(schemaVersion))
-                            {
-                                swagger.paths[instancePath + "/_history/{vid}"]["get"]["responses"] = JObject.Parse("{\"200\": { \"description\": \"Success\"}}"); 
-                            }
-                            else
-                            {
-                                swagger.paths[instancePath + "/_history/{vid}"]["get"]["responses"] = JObject.Parse("{\"200\": { \"schema\": {$ref: \"#/definitions/" + typeName + "\"}}}"); 
-                            }
+                            JObject historyObj = SwaggerOperation();
+                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("id", "path", "string", "id of resource", true));
+                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("vid", "path", "string", "version id of resource", true));
+                            swagger["paths"][instancePath + "/_history/{vid}"] = new JObject();
+                            swagger["paths"][instancePath + "/_history/{vid}"]["get"] = historyObj;
                         }
 
-                        if (interaction.Contains("history-instance")  && (interactionList.Contains("all") || interactionList.Contains("history-instance")))
+                        if (interaction.Contains("history-instance") && (interactionList.Contains("all") || interactionList.Contains("history-instance")))
                         {
-                            JObject historyObj = JObject.Parse("{}");
-                            historyObj["parameters"] = JArray.Parse("[{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}]");
-                            ((JArray)historyObj["parameters"]).Add(JObject.Parse("{\"in\": \"query\", \"name\": \"_count\", \"type\": \"string\"}")); 
-                            ((JArray)historyObj["parameters"]).Add(JObject.Parse("{\"in\": \"query\", \"name\": \"_since\", \"type\": \"string\"}")); 
-                            swagger.paths[instancePath + "/_history"] = JObject.Parse("{}");
-                            swagger.paths[instancePath + "/_history"]["get"] = historyObj;
-                            swagger.paths[instancePath + "/_history"]["get"]["responses"] = JObject.Parse("{\"200\": { \"description\": \"Success\"}}"); 
+                            JObject historyObj = SwaggerOperation();
+                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("id", "path", "string", "id of resource", true));
+                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("_count", "query", "string", "number to return"));
+                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("_since", "query", "string", "how far back"));
+                            swagger["paths"][instancePath + "/_history"] = new JObject();
+                            swagger["paths"][instancePath + "/_history"]["get"] = historyObj;
                         }
-
 
                         if (interaction.Contains("history-type") && (interactionList.Contains("all") || interactionList.Contains("history-type")))
                         {
-                            JObject historyObj = JObject.Parse("{}");
-                            historyObj["parameters"] = JArray.Parse("[]");
-                            ((JArray)historyObj["parameters"]).Add(JObject.Parse("{\"in\": \"query\", \"name\": \"_count\", \"type\": \"string\"}")); 
-                            ((JArray)historyObj["parameters"]).Add(JObject.Parse("{\"in\": \"query\", \"name\": \"_since\", \"type\": \"string\"}")); 
-                            swagger.paths[typePath + "/_history"] = JObject.Parse("{}");
-                            swagger.paths[typePath + "/_history"]["get"] = historyObj;
-                            swagger.paths[typePath + "/_history"]["get"]["responses"] = JObject.Parse("{\"200\": { \"description\": \"Success\"}}"); 
+                            JObject historyObj = SwaggerOperation();
+                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("_count", "query", "string", "number to return"));
+                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("_since", "query", "string", "how far back"));
+                            swagger["paths"][typePath + "/_history"] = new JObject();
+                            swagger["paths"][typePath + "/_history"]["get"] = historyObj;
                         }
 
-                        if (interaction.Contains("create")  && (interactionList.Contains("all") || interactionList.Contains("create")))
+                        if (interaction.Contains("create") && (interactionList.Contains("all") || interactionList.Contains("create")))
                         {
-                            swagger.paths[typePath]["post"] = JObject.Parse("{\"parameters\": [], \"responses\": {\"200\": {\"description\": \"success\"}}}");
-                            JObject param = new JObject();
-                            param["name"] = "body";
-                            param["in"] = "body";
-                            if (String.IsNullOrEmpty(schemaVersion))
-                            {
-                                param["schema"] = JObject.Parse("{\"type\": \"object\"}");
-                            }
-                            else
-                            {
-                                param["schema"] = JObject.Parse("{$ref: \"#/definitions/" + typeName + "\"}");
-                            }
-                            ((JArray)swagger.paths[typePath]["post"]["parameters"]).Add(param);
+                            swagger["paths"][typePath]["post"] = SwaggerOperation();
+                            JObject bodyParam = SwaggerParameter("body", "body");
+                            bodyParam["schema"] = JObject.Parse("{\"type\": \"object\"}");
+                            ((JArray)swagger["paths"][typePath]["post"]["parameters"]).Add(bodyParam);
                         }
 
-                        if (interaction.Contains("update")  && (interactionList.Contains("all") || interactionList.Contains("update")))
+                        if (interaction.Contains("update") && (interactionList.Contains("all") || interactionList.Contains("update")))
                         {
-                            swagger.paths[instancePath]["put"] = JObject.Parse("{\"parameters\": [], \"responses\": {\"200\": {\"description\": \"success\"}}}");
-                            JObject param = new JObject();
-                            param["name"] = "body";
-                            param["in"] = "body";
-                            if (String.IsNullOrEmpty(schemaVersion))
-                            {
-                                param["schema"] = JObject.Parse("{\"type\": \"object\"}");
-                            }
-                            else
-                            {
-                                param["schema"] = JObject.Parse("{$ref: \"#/definitions/" + typeName + "\"}");
-                            }
-                            ((JArray)swagger.paths[instancePath]["put"]["parameters"]).Add(param);
-                            ((JArray)swagger.paths[instancePath]["put"]["parameters"]).Add(JObject.Parse("{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}"));
+                            swagger["paths"][instancePath]["put"] = SwaggerOperation();
+                            JObject bodyParam = SwaggerParameter("body", "body");
+                            bodyParam["schema"] = JObject.Parse("{\"type\": \"object\"}");
+                            ((JArray)swagger["paths"][instancePath]["put"]["parameters"]).Add(bodyParam);
+                            ((JArray)swagger["paths"][instancePath]["put"]["parameters"]).Add(SwaggerParameter("id", "path", "string", null, true));
                         }
 
-                        if (interaction.Contains("delete")  && (interactionList.Contains("all") || interactionList.Contains("delete")))
+                        if (interaction.Contains("delete") && (interactionList.Contains("all") || interactionList.Contains("delete")))
                         {
-                            swagger.paths[instancePath]["delete"] = JObject.Parse("{\"parameters\": [], \"responses\": {\"200\": {\"description\": \"success\"}}}");
-                            swagger.paths[instancePath]["delete"]["parameters"] = JArray.Parse("[{\"in\": \"path\", \"name\": \"id\", \"required\": true, \"type\": \"string\"}]");
+                            swagger["paths"][instancePath]["delete"] = SwaggerOperation();
+                            ((JArray)swagger["paths"][instancePath]["delete"]["parameters"]).Add(SwaggerParameter("id", "path", "string", null, true));
                         }
                     }
                 }
@@ -448,13 +404,6 @@ namespace fhir2apimlib
                     Console.WriteLine("\nException Caught!");
                     Console.WriteLine("Message :{0} ", e.Message);
                 }
-            }
-
-            if (!String.IsNullOrEmpty(schemaVersion))
-            {
-                dynamic schema = JObject.Parse((await GetFhirSchema(schemaVersion)).ToString());
-                swagger.definitions = schema.definitions;
-                swagger.definitions.Remove("ResourceList");
             }
 
             return JsonConvert.SerializeObject(swagger, Formatting.Indented);
