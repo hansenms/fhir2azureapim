@@ -1,0 +1,22 @@
+<policies>
+    <inbound>
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <openid-config url="https://login.microsoftonline.com/{{FHIRAPIAADTENANT}}/.well-known/openid-configuration" />
+            <required-claims>
+                <claim name="aud">
+                    <value>{{FHIRAPIAUDIENCE}}</value>
+                </claim>
+            </required-claims>
+        </validate-jwt>
+        <base />
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>

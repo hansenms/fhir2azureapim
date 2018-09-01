@@ -1,0 +1,45 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "apimInstanceName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of Azure API Management instance"
+            }
+        },
+        "apiName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of API"
+            }
+        },
+        "policyName": {
+            "type": "string",
+            "defaultValue": "policy",
+            "metadata": {
+                "description": "Name of policy"
+            }
+        },
+        "policyUrl": {
+            "type": "string",
+            "metadata": {
+                "description": "URL for XML policy document"
+            }
+        }
+    },
+    "variables": {
+        "apiPolicyName": "[concat(parameters('apimInstanceName'), '/', parameters('apiName'), '/', parameters('policyName'))]"
+    },
+    "resources": [
+        {
+            "name": "[variables('apiPolicyName')]",
+            "type": "Microsoft.ApiManagement/service/apis/policies",
+            "apiVersion": "2018-01-01",
+            "properties": {
+              "policyContent": "[parameters('policyUrl')]",
+              "contentFormat": "rawxml-link"
+            }
+        }        
+    ]
+}
