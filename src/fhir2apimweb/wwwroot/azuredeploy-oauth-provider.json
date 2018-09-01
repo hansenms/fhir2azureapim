@@ -1,0 +1,76 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "apimInstanceName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of Azure API Management instance"
+            }
+        },
+        "authority": {
+            "type": "string",
+            "defaultValue": "https://login.microsoftonline.com/common",
+            "metadata": {
+                "description": "OAuth authority"
+            }
+        },
+        "clientId": {
+            "type": "string",
+            "metadata": {
+                "description": "Client application ID"
+            }
+        },
+        "clientSecret": {
+            "type": "string",
+            "metadata": {
+                "description": "Client secret"
+            }
+        },
+        "audience": {
+            "type": "string",
+            "metadata": {
+                "description": "Audience (for issued token)"
+            }
+        }
+    },
+    "variables": {
+        "authorizationServerName": "[concat(parameters('apimInstanceName'), '/oauthServer')]",
+        "authorizationEndpoint": "[concat(parameters('authority'), '/oauth2/authorize')]",
+        "tokenEndpoint": "[concat(parameters('authority'), '/oauth2/token')]"
+    },
+    "resources": [
+        {
+            "name": "[variables('authorizationServerName')]",
+            "type": "Microsoft.ApiManagement/service/authorizationServers",
+            "apiVersion": "2018-01-01",
+            "properties": {
+                "description": "OAuth provider for APIM instance",
+                "tokenBodyParameters": [
+                    {
+                        "name": "resource",
+                        "value": "[parameters('audience')]"
+                    }
+                ],
+                "authorizationMethods": [
+                    "GET"
+                ],
+                "clientAuthenticationMethod": [
+                    "Body"
+                ],
+                "bearerTokenSendingMethods": [
+                    "authorizationHeader"
+                ],
+                "clientRegistrationEndpoint": "[parameters('authority')]",
+                "tokenEndpoint": "[variables('tokenEndpoint')]",
+                "clientSecret": "[parameters('clientSecret')]",
+                "displayName": "[concat('oauthsource', uniqueString(resourceGroup().id))]",
+                "authorizationEndpoint": "[variables('authorizationEndpoint')]",
+                "grantTypes": [
+                    "authorizationCode"
+                ],
+                "clientId": "[parameters('clientId')]"
+            }
+        }
+    ]
+}
