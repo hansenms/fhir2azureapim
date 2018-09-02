@@ -5,8 +5,7 @@ This project contains utilities and services for deploying [Azure API Management
 
 To Do List
 ----------
-* Enable deployment to existing APIM Service.
+* Proper naming of oauth provider.
 * Make sure API has meaningful name.
-* Add API to product.
 * Enable OAuth in policy.
 * Deployment to vnet.

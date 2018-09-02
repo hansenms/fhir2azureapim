@@ -98,13 +98,43 @@
       "metadata": {
         "description": "Require subscription key to access api"
       }
+    },
+    "oauthAuthority": {
+      "type": "string",
+      "defaultValue": "https://login.microsoftonline.com/common",
+      "metadata": {
+        "description": "The OAuth provider/sauthority"
+      }
+    },
+    "oauthClientId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Client application id"
+      }
+    },
+    "oauthClientSecret": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Client application secret"        
+      }
+    },
+    "oauthAudience": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Audience (aud claim in token) for OAuth"
+      }
     }
   },
   "variables": {
     "apiManagementServiceName": "[if(equals(parameters('apimServiceName'),'GENERATE'), concat('fhirapiservice', uniqueString(resourceGroup().id)), parameters('apimServiceName'))]",
     "apiManagementApiName": "[concat(variables('apiManagementServiceName'),'/', parameters('apiName'))]",
     "swaggerUrl": "[concat(parameters('fhirSwaggerConverterUrl'),'/api/Swagger?fhirserver=',parameters('fhirServerUrl'),'&interaction_list=', parameters('interactionList'), '&resource_list=', parameters('resourceList'))]",
-    "apiProductTemplateUrl": "[concat(parameters('fhirSwaggerConverterUrl'), '/azuredeploy-api-product.json')]"
+    "apiProductTemplateUrl": "[concat(parameters('fhirSwaggerConverterUrl'), '/azuredeploy-api-product.json')]",
+    "deployOAuth": "[and(and(not(empty(parameters('oauthClientId'))), not(empty(parameters('oauthClientSecret')))), not(empty(parameters('oauthAudience'))))]",
+    "apiOAuthProviderTemplateUrl": "[concat(parameters('fhirSwaggerConverterUrl'), '/azuredeploy-oauth-provider.json')]"
   },
   "resources": [
     {
@@ -161,6 +191,39 @@
           },
           "subscriptionRequired": {
             "value": "[parameters('subscriptionRequired')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "ApiOAuthProvider",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-05-10",
+      "condition": "[variables('deployOAuth')]",
+      "dependsOn": [
+        "[concat('Microsoft.ApiManagement/service/', variables('apiManagementServiceName'), '/apis/', parameters('apiName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('apiOAuthProviderTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "apimInstanceName": {
+            "value": "[variables('apiManagementServiceName')]"
+          },
+          "authority": {
+            "value": "[parameters('oauthAuthority')]"
+          },
+          "clientId": {
+            "value": "[parameters('oauthClientId')]"
+          },
+          "clientSecret": {
+            "value": "[parameters('oauthClientSecret')]"
+          },
+          "audience": {
+            "value": "[parameters('oauthAudience')]"
           }
         }
       }
