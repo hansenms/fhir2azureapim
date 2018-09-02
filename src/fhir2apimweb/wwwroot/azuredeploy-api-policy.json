@@ -14,28 +14,55 @@
                 "description": "Name of API"
             }
         },
-        "policyName": {
-            "type": "string",
-            "defaultValue": "policy",
-            "metadata": {
-                "description": "Name of policy"
-            }
-        },
         "policyUrl": {
             "type": "string",
             "metadata": {
                 "description": "URL for XML policy document"
             }
+        },
+        "aadTenant": {
+            "type": "string",
+            "metadata": {
+                "description": "AAD Tenant"
+            }
+        },
+        "audience": {
+            "type": "string",
+            "metadata": {
+                "description": "Audience (aud) for JWT validation"
+            }
         }
     },
     "variables": {
-        "apiPolicyName": "[concat(parameters('apimInstanceName'), '/', parameters('apiName'), '/', parameters('policyName'))]"
+        "apiPolicyName": "[concat(parameters('apimInstanceName'), '/', parameters('apiName'), '/policy')]"
     },
     "resources": [
+        {
+            "name": "[concat(parameters('apimInstanceName'), '/FHIRAPIAADTENANT')]",
+            "type": "Microsoft.ApiManagement/service/properties",
+            "apiVersion": "2018-01-01",
+            "properties": {
+              "displayName": "FHIRAPIAADTENANT",
+              "value": "[parameters('aadTenant')]"
+            }
+        },
+        {
+            "name": "[concat(parameters('apimInstanceName'), '/FHIRAPIAUDIENCE')]",
+            "type": "Microsoft.ApiManagement/service/properties",
+            "apiVersion": "2018-01-01",
+            "properties": {
+              "displayName": "FHIRAPIAUDIENCE",
+              "value": "[parameters('audience')]"
+            }
+        },
         {
             "name": "[variables('apiPolicyName')]",
             "type": "Microsoft.ApiManagement/service/apis/policies",
             "apiVersion": "2018-01-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/properties', parameters('apimInstanceName'), 'FHIRAPIAUDIENCE')]",
+                "[resourceId('Microsoft.ApiManagement/service/properties', parameters('apimInstanceName'), 'FHIRAPIAADTENANT')]"
+            ],
             "properties": {
               "policyContent": "[parameters('policyUrl')]",
               "contentFormat": "rawxml-link"
