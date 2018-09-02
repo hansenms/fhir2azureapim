@@ -1,0 +1,56 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "apimInstanceName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of API Management Instance. "
+            }
+        },
+        "apiName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of API to add to product"
+            }
+        },
+        "apiPath": {
+            "type": "string",
+            "metadata": {
+                "description": "API path"
+            }
+        },
+        "authorizationServerId":
+        {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the OAuth registration"
+            }
+        },
+        "protocols":
+        {
+            "type": "array",
+            "metadata": {
+                "description": "Protocols. Eventhough this is an update of an existing API, it must be supplied."
+            }
+        }
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('apimInstanceName'), '/', parameters('apiName'))]",
+            "type": "Microsoft.ApiManagement/service/apis",
+            "apiVersion": "2018-01-01",
+            "properties": {
+              "authenticationSettings": {
+                "oAuth2": {
+                  "authorizationServerId": "[parameters('authorizationServerId')]",
+                  "scope": null
+                }
+              },
+              "path": "[parameters('apiPath')]",
+              "displayName": "[parameters('apiName')]",
+              "protocols": "[parameters('protocols')]" 
+            }
+        }
+    ]
+}
