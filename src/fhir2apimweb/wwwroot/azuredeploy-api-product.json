@@ -1,0 +1,65 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "apimInstanceName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of API Management Instance. "
+            }
+        },
+        "apiName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of API to add to product"
+            }
+        },
+        "productName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of API product"
+            }
+        },
+        "subscriptionRequired": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Require a subscription key to access the API"
+            }
+        },
+        "approvalRequired": {
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Require a approval when user requests subscription"
+            }
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "name": "[concat(parameters('apimInstanceName'),'/',parameters('productName'))]",
+            "type": "Microsoft.ApiManagement/service/products",
+            "apiVersion": "2018-01-01",
+            "properties": {
+                "description": "string",
+                "terms": "string",
+                "subscriptionRequired": "[parameters('subscriptionRequired')]",
+                "approvalRequired": "[parameters('approvalRequired')]",
+                "subscriptionsLimit": 1,
+                "state": "published",
+                "displayName": "[parameters('productName')]"
+            },
+            "resources": [
+                {
+                    "apiVersion": "2017-03-01",
+                    "type": "apis",
+                    "name": "[parameters('apiName')]",
+                    "dependsOn": [
+                      "[concat('Microsoft.ApiManagement/service/', parameters('apimInstanceName'), '/products/', parameters('productName'))]"
+                    ]
+                  }
+            ]
+        }
+    ]
+}
