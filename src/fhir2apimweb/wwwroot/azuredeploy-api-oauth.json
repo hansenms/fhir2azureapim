@@ -33,6 +33,13 @@
             "metadata": {
                 "description": "Protocols. Eventhough this is an update of an existing API, it must be supplied."
             }
+        },
+        "serviceUrl":
+        {
+            "type": "string",
+            "metadata": {
+                "description": "Backend Service URL. Eventhough this is an update of an existing API, it must be supplied."
+            }
         }
     },
     "resources": [
@@ -49,7 +56,8 @@
               },
               "path": "[parameters('apiPath')]",
               "displayName": "[parameters('apiName')]",
-              "protocols": "[parameters('protocols')]" 
+              "protocols": "[parameters('protocols')]",
+              "serviceUrl": ""
             }
         }
     ]

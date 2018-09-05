@@ -126,6 +126,13 @@
       "metadata": {
         "description": "Audience (aud claim in token) for OAuth"
       }
+    },
+    "oauthAADTenantId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Azure AD Tenant ID"
+      }
     }
   },
   "variables": {
@@ -133,8 +140,11 @@
     "apiManagementApiName": "[concat(variables('apiManagementServiceName'),'/', parameters('apiName'))]",
     "swaggerUrl": "[concat(parameters('fhirSwaggerConverterUrl'),'/api/Swagger?fhirserver=',parameters('fhirServerUrl'),'&interaction_list=', parameters('interactionList'), '&resource_list=', parameters('resourceList'))]",
     "apiProductTemplateUrl": "[concat(parameters('fhirSwaggerConverterUrl'), '/azuredeploy-api-product.json')]",
-    "deployOAuth": "[and(and(not(empty(parameters('oauthClientId'))), not(empty(parameters('oauthClientSecret')))), not(empty(parameters('oauthAudience'))))]",
-    "apiOAuthProviderTemplateUrl": "[concat(parameters('fhirSwaggerConverterUrl'), '/azuredeploy-oauth-provider.json')]"
+    "deployOAuth": "[and(and(and(not(empty(parameters('oauthClientId'))), not(empty(parameters('oauthClientSecret')))), not(empty(parameters('oauthAudience')))), not(empty(parameters('oauthAADTenantId'))))]",
+    "apiOAuthProviderTemplateUrl": "[concat(parameters('fhirSwaggerConverterUrl'), '/azuredeploy-oauth-provider.json')]",
+    "apiOAuthTemplateUrl": "[concat(parameters('fhirSwaggerConverterUrl'), '/azuredeploy-api-oauth.json')]",
+    "apiOAuthPolicyTemplateUrl": "[concat(parameters('fhirSwaggerConverterUrl'), '/azuredeploy-api-policy.json')]",
+    "apiOAuthPolicyUrl": "[concat(parameters('fhirSwaggerConverterUrl'), '/api-policy.xml')]"
   },
   "resources": [
     {
@@ -221,6 +231,75 @@
           },
           "clientSecret": {
             "value": "[parameters('oauthClientSecret')]"
+          },
+          "audience": {
+            "value": "[parameters('oauthAudience')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "ApiEnableOauth",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-05-10",
+      "condition": "[variables('deployOAuth')]",
+      "dependsOn": [
+        "[concat('Microsoft.ApiManagement/service/', variables('apiManagementServiceName'), '/apis/', parameters('apiName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('apiOAuthTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "apimInstanceName": {
+            "value": "[variables('apiManagementServiceName')]"
+          },
+          "apiName": {
+            "value": "[parameters('apiName')]"
+          },
+          "apiPath": {
+            "value": "[parameters('apiPath')]"
+          },
+          "authorizationServerId": {
+            "value": "oauthServer"
+          },
+          "protocols": {
+            "value": "[reference(resourceId('Microsoft.ApiManagement/service/apis',variables('apiManagementServiceName'),parameters('apiName'))).protocols]"
+          },
+          "serviceUrl": {
+            "value": "[reference(resourceId('Microsoft.ApiManagement/service/apis',variables('apiManagementServiceName'),parameters('apiName'))).serviceUrl]"
+          }
+        }
+      }
+    },
+    {
+      "name": "ApiOauthPolicy",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-05-10",
+      "condition": "[variables('deployOAuth')]",
+      "dependsOn": [
+        "[concat('Microsoft.ApiManagement/service/', variables('apiManagementServiceName'), '/apis/', parameters('apiName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('apiOAuthPolicyTemplateUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "apimInstanceName": {
+            "value": "[variables('apiManagementServiceName')]"
+          },
+          "apiName": {
+            "value": "[parameters('apiName')]"
+          },
+          "policyUrl": {
+            "value": "[variables('apiOAuthPolicyUrl')]"
+          },
+          "aadTenant": {
+            "value": "[parameters('oauthAADTenantId')]"
           },
           "audience": {
             "value": "[parameters('oauthAudience')]"
