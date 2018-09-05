@@ -57,7 +57,7 @@
               "path": "[parameters('apiPath')]",
               "displayName": "[parameters('apiName')]",
               "protocols": "[parameters('protocols')]",
-              "serviceUrl": ""
+              "serviceUrl": "[parameters('serviceUrl')]"
             }
         }
     ]
