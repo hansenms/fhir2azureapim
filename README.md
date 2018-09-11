@@ -50,6 +50,47 @@ oauthAuthority="https://login.microsoftonline.com/${oauthTenantId}"
 
 **PowerShell**
 
+```PowerShell
+#Login
+Connect-AzureAd
+
+#Some basic information
+$apimInstanceName = "myFhirApimInstance2"
+$fhirApiAudience = "https://myfhirapi2.local"
+$apimInstanceReplyUrl = "https://${apimInstanceName}.portal.azure-api.net/docs/services/oauthServer/console/oauth2/authorizationcode/callback"
+$postmanReplyUrl="https://www.getpostman.com/oauth2/callback"
+
+#Application registration for API including Service Principal
+$apiAppReg = New-AzureADApplication -DisplayName $fhirApiAudience -IdentifierUris $fhirApiAudience
+New-AzureAdServicePrincipal -AppId $apiAppReg.AppId
+
+#Required App permissions
+$reqAad = New-Object -TypeName "Microsoft.Open.AzureAD.Model.RequiredResourceAccess"
+$reqAad.ResourceAppId = "00000002-0000-0000-c000-000000000000"
+$reqAad.ResourceAccess = New-Object -TypeName "Microsoft.Open.AzureAD.Model.ResourceAccess" -ArgumentList "311a71cc-e848-46a1-bdf8-97ff7156d8e6","Scope"
+
+$reqApi = New-Object -TypeName "Microsoft.Open.AzureAD.Model.RequiredResourceAccess"
+$reqApi.ResourceAppId = $apiAppReg.AppId
+$reqApi.ResourceAccess = New-Object -TypeName "Microsoft.Open.AzureAD.Model.ResourceAccess" -ArgumentList $apiAppReg.Oauth2Permissions[0].id,"Scope"
+
+
+#Application registration for API
+$apiManagementAppReg = New-AzureADApplication -DisplayName $apimInstanceName -IdentifierUris "https://${apimInstanceName}" -RequiredResourceAccess $reqAad,$reqApi -ReplyUrls $apimInstanceReplyUrl,$postmanReplyUrl
+
+#Create a client secret
+$apiManagementAppPassword = New-AzureADApplicationPasswordCredential -ObjectId $apiManagementAppReg.ObjectId
+
+#Create Service Principal
+New-AzureAdServicePrincipal -AppId $apiManagementAppReg.AppId
+
+#Collect some information needed for deployment
+$oauthTenantId = (Get-AzureADCurrentSessionInfo).TenantId.Guid
+$oauthAuhority = "https://login.microsoftonline.com/${oauthTenantId}"
+$oauthClientId = $apiManagementAppReg.AppId
+$oauthClientSecret = $apiManagementAppPassword.Value
+$oauthAudience = $apiAppReg.AppId
+```
+
 
 Deploy Template
 ---------------
