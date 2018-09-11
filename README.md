@@ -51,11 +51,11 @@ oauthAuthority="https://login.microsoftonline.com/${oauthTenantId}"
 **PowerShell**
 
 ```PowerShell
-#Login
+#Make sure you are connected to Azure AD
 Connect-AzureAd
 
 #Some basic information
-$apimInstanceName = "myFhirApimInstance2"
+$apimInstanceName = "myFhirApimInstance"
 $fhirApiAudience = "https://myfhirapi2.local"
 $apimInstanceReplyUrl = "https://${apimInstanceName}.portal.azure-api.net/docs/services/oauthServer/console/oauth2/authorizationcode/callback"
 $postmanReplyUrl="https://www.getpostman.com/oauth2/callback"
@@ -84,8 +84,8 @@ $apiManagementAppPassword = New-AzureADApplicationPasswordCredential -ObjectId $
 New-AzureAdServicePrincipal -AppId $apiManagementAppReg.AppId
 
 #Collect some information needed for deployment
-$oauthTenantId = (Get-AzureADCurrentSessionInfo).TenantId.Guid
-$oauthAuhority = "https://login.microsoftonline.com/${oauthTenantId}"
+$oauthTenantId = (Get-AzureADCurrentSessionInfo).TenantId.ToString()
+$oauthAuthority = "https://login.microsoftonline.com/${oauthTenantId}"
 $oauthClientId = $apiManagementAppReg.AppId
 $oauthClientSecret = $apiManagementAppPassword.Value
 $oauthAudience = $apiAppReg.AppId
@@ -112,3 +112,25 @@ az group deployment create --resource-group ${resourceGroupName} --name myfhirap
 
 
 **PowerShell**
+
+```PowerShell
+$resourceGroupName="myfhirApim2"
+
+$templateParameters = @{
+    publisherName = "My Publisher";
+    publisherEmail = "myname@contoso.com";
+    fhirServerUrl = "http://hapi.fhir.org/baseDstu3/";
+    apimServiceName = $apimInstanceName;
+    oauthAuthority = $oauthAuthority;
+    oauthClientId = $oauthClientId;
+    oauthClientSecret = $oauthClientSecret;
+    oauthAudience = $oauthAudience;
+    oauthAADTenantId = $oauthTenantId;
+}
+
+#Create resource group
+$rg = New-AzureRmResourceGroup -Name $resourceGroupName -Location eastus
+
+#Deploy
+New-AzureRmResourceGroupDeployment -Name PSDeploy -ResourceGroupName $resourceGroupName -TemplateUri https://fhir2apim.azurewebsites.net/azuredeploy.json -TemplateParameterObject $templateParameters
+```
