@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB"
         crossorigin="anonymous">
 
-    <title>Azure APIM for FHIR Server</title>
+    <title>Azure API Management for FHIR Server</title>
 </head>
 
 <body>
@@ -18,10 +18,38 @@
 
         <div class="starter-template">
             <h1>Azure API Management for FHIR Server</h1>
-            <p class="lead">Deploy Azure API Management for Any FHIR Enabled Server</p>
+            <p class="lead">Deploy Azure <a href="https://azure.microsoft.com/en-us/services/api-management/">API Management</a> for any FHIR server</p>
         </div>
 
         <div>
+            <p>
+                This service provides a utility for generating a Swagger API defintion for a given FHIR endpoint.
+            </p>
+            <p>
+                You can test this Swagger generation service by entering a FHIR server URL below.
+            </p>
+        </div>
+        <div>
+            <form class="form" method="GET" action="/api/Swagger">
+                <div class="form-group">
+                  <label for="fhirServer">FHIR Server URL:</label>
+                  <input type="text" class="form-control" name="fhirServer" id="fhirServer" value="http://hapi.fhir.org/baseDstu3/" />
+                </div>
+                <button type="submit" class="btn btn-default">Generate Swagger</button>
+            </form> 
+        </div>
+
+        <div style="margin-top: 5mm;">
+            <p>
+                To deploy a API Management instance for a given FHIR endpoint to Azure, use the deploy buttons below.
+                If you would like OAuth authentication enabled on your API, 
+                you will need appropriate Azure Active Directory application registrations. 
+                You can find instructions on <a href="https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-v1-integrate-apps-with-azure-ad">how to create application in the Azure documentation</a>. 
+                There are also instructions on how to configure Azure Active Directory applications and deploying API Management in the source code repository for this service: <a href="https://github.com/hansenms/fhir2azureapim">https://github.com/hansenms/fhir2azureapim</a> 
+            </p>
+        </div>
+
+        <div style="margin-top: 5mm">
             <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Ffhir2apim.azurewebsites.net%2Fazuredeploy.json" target="_blank">
                 <img src="http://azuredeploy.net/deploybutton.png"/>
             </a>
