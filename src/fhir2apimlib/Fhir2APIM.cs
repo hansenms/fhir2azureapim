@@ -289,6 +289,7 @@ namespace fhir2apimlib
                 try
                 {
                     client.BaseAddress = fhirServer;
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
                     HttpResponseMessage response = await client.GetAsync(metadataEndpoint);
                     response.EnsureSuccessStatusCode();
                     dynamic conformance = JObject.Parse(await response.Content.ReadAsStringAsync());
