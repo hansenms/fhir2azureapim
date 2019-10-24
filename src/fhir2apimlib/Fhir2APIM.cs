@@ -48,7 +48,7 @@ namespace fhir2apimlib
                 ((JArray)op["dependsOn"]).Add("[concat('Microsoft.ApiManagement/service/', parameters('apimInstanceName'), '/apis/fhirapi/operations/" + previousOpName + "')]");
             }
 
-            op["properties"] =  new JObject();
+            op["properties"] = new JObject();
             op["properties"]["urlTemplate"] = urlTemplate;
             op["properties"]["templateParameters"] = new JArray();
             op["properties"]["method"] = method;
@@ -130,7 +130,7 @@ namespace fhir2apimlib
                         if (interaction.Contains("search-type") && (interactionList.Contains("all") || interactionList.Contains("search-type")))
                         {
                             var op = ArmApiOperation(typePath, "GET", previousOpName);
-                            if (r["searchParam"] != null) 
+                            if (r["searchParam"] != null)
                             {
                                 foreach (JObject s in (JArray)r["searchParam"])
                                 {
@@ -308,96 +308,99 @@ namespace fhir2apimlib
                             continue;
                         }
 
-                        var interaction = ((JArray)r["interaction"]).Select(i => (string)i["code"]).ToArray();
-                        string typePath = "/" + typeName;
-                        string instancePath = "/" + typeName + "/{id}";
-
-                        swagger["paths"][typePath] = new JObject();
-                        swagger["paths"][instancePath] = new JObject();
-
-                        if (interaction.Contains("search-type") && (interactionList.Contains("all") || interactionList.Contains("search-type")))
+                        var interaction = ((JArray)r["interaction"])?.Select(i => (string)i["code"]).ToArray();
+                        if (interaction != null)
                         {
-                            JObject searchObj = SwaggerOperation();
+                            string typePath = "/" + typeName;
+                            string instancePath = "/" + typeName + "/{id}";
 
-                            if (r["searchParam"] != null)
+                            swagger["paths"][typePath] = new JObject();
+                            swagger["paths"][instancePath] = new JObject();
+
+                            if (interaction.Contains("search-type") && (interactionList.Contains("all") || interactionList.Contains("search-type")))
                             {
-                                foreach (JObject s in (JArray)r["searchParam"])
-                                {
-                                    JObject p = SwaggerParameter(
-                                        (string)s["name"],
-                                        "query",
-                                        GetTypeFromTypeName((string)s["name"]),
-                                        (string)s["documentation"], false,
-                                        (string)s["type"] == "date" ? "date" : null
-                                        );
+                                JObject searchObj = SwaggerOperation();
 
-                                    ((JArray)searchObj["parameters"]).Add(p);
+                                if (r["searchParam"] != null)
+                                {
+                                    foreach (JObject s in (JArray)r["searchParam"])
+                                    {
+                                        JObject p = SwaggerParameter(
+                                            (string)s["name"],
+                                            "query",
+                                            GetTypeFromTypeName((string)s["name"]),
+                                            (string)s["documentation"], false,
+                                            (string)s["type"] == "date" ? "date" : null
+                                            );
+
+                                        ((JArray)searchObj["parameters"]).Add(p);
+                                    }
                                 }
+
+                                JObject formatParameter = SwaggerParameter("_format", "query", "string", "Output formatting");
+                                formatParameter["x-consoleDefault"] = "application/json";
+                                ((JArray)searchObj["parameters"]).Add(formatParameter);
+
+                                swagger["paths"][typePath]["get"] = searchObj;
                             }
 
-                            JObject formatParameter = SwaggerParameter("_format", "query", "string", "Output formatting");
-                            formatParameter["x-consoleDefault"] = "application/json";
-                            ((JArray)searchObj["parameters"]).Add(formatParameter);
+                            if (interaction.Contains("read") && (interactionList.Contains("all") || interactionList.Contains("read")))
+                            {
+                                JObject readobj = SwaggerOperation();
+                                ((JArray)readobj["parameters"]).Add(SwaggerParameter("id", "path", "string", "id of resource", true));
+                                swagger["paths"][instancePath]["get"] = readobj;
+                            }
 
-                            swagger["paths"][typePath]["get"] = searchObj;
-                        }
+                            if (interaction.Contains("vread") && (interactionList.Contains("all") || interactionList.Contains("vread")))
+                            {
+                                JObject historyObj = SwaggerOperation();
+                                ((JArray)historyObj["parameters"]).Add(SwaggerParameter("id", "path", "string", "id of resource", true));
+                                ((JArray)historyObj["parameters"]).Add(SwaggerParameter("vid", "path", "string", "version id of resource", true));
+                                swagger["paths"][instancePath + "/_history/{vid}"] = new JObject();
+                                swagger["paths"][instancePath + "/_history/{vid}"]["get"] = historyObj;
+                            }
 
-                        if (interaction.Contains("read") && (interactionList.Contains("all") || interactionList.Contains("read")))
-                        {
-                            JObject readobj = SwaggerOperation();
-                            ((JArray)readobj["parameters"]).Add(SwaggerParameter("id", "path", "string", "id of resource", true));
-                            swagger["paths"][instancePath]["get"] = readobj;
-                        }
+                            if (interaction.Contains("history-instance") && (interactionList.Contains("all") || interactionList.Contains("history-instance")))
+                            {
+                                JObject historyObj = SwaggerOperation();
+                                ((JArray)historyObj["parameters"]).Add(SwaggerParameter("id", "path", "string", "id of resource", true));
+                                ((JArray)historyObj["parameters"]).Add(SwaggerParameter("_count", "query", "string", "number to return"));
+                                ((JArray)historyObj["parameters"]).Add(SwaggerParameter("_since", "query", "string", "how far back"));
+                                swagger["paths"][instancePath + "/_history"] = new JObject();
+                                swagger["paths"][instancePath + "/_history"]["get"] = historyObj;
+                            }
 
-                        if (interaction.Contains("vread") && (interactionList.Contains("all") || interactionList.Contains("vread")))
-                        {
-                            JObject historyObj = SwaggerOperation();
-                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("id", "path", "string", "id of resource", true));
-                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("vid", "path", "string", "version id of resource", true));
-                            swagger["paths"][instancePath + "/_history/{vid}"] = new JObject();
-                            swagger["paths"][instancePath + "/_history/{vid}"]["get"] = historyObj;
-                        }
+                            if (interaction.Contains("history-type") && (interactionList.Contains("all") || interactionList.Contains("history-type")))
+                            {
+                                JObject historyObj = SwaggerOperation();
+                                ((JArray)historyObj["parameters"]).Add(SwaggerParameter("_count", "query", "string", "number to return"));
+                                ((JArray)historyObj["parameters"]).Add(SwaggerParameter("_since", "query", "string", "how far back"));
+                                swagger["paths"][typePath + "/_history"] = new JObject();
+                                swagger["paths"][typePath + "/_history"]["get"] = historyObj;
+                            }
 
-                        if (interaction.Contains("history-instance") && (interactionList.Contains("all") || interactionList.Contains("history-instance")))
-                        {
-                            JObject historyObj = SwaggerOperation();
-                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("id", "path", "string", "id of resource", true));
-                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("_count", "query", "string", "number to return"));
-                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("_since", "query", "string", "how far back"));
-                            swagger["paths"][instancePath + "/_history"] = new JObject();
-                            swagger["paths"][instancePath + "/_history"]["get"] = historyObj;
-                        }
+                            if (interaction.Contains("create") && (interactionList.Contains("all") || interactionList.Contains("create")))
+                            {
+                                swagger["paths"][typePath]["post"] = SwaggerOperation();
+                                JObject bodyParam = SwaggerParameter("body", "body");
+                                bodyParam["schema"] = JObject.Parse("{\"type\": \"object\"}");
+                                ((JArray)swagger["paths"][typePath]["post"]["parameters"]).Add(bodyParam);
+                            }
 
-                        if (interaction.Contains("history-type") && (interactionList.Contains("all") || interactionList.Contains("history-type")))
-                        {
-                            JObject historyObj = SwaggerOperation();
-                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("_count", "query", "string", "number to return"));
-                            ((JArray)historyObj["parameters"]).Add(SwaggerParameter("_since", "query", "string", "how far back"));
-                            swagger["paths"][typePath + "/_history"] = new JObject();
-                            swagger["paths"][typePath + "/_history"]["get"] = historyObj;
-                        }
+                            if (interaction.Contains("update") && (interactionList.Contains("all") || interactionList.Contains("update")))
+                            {
+                                swagger["paths"][instancePath]["put"] = SwaggerOperation();
+                                JObject bodyParam = SwaggerParameter("body", "body");
+                                bodyParam["schema"] = JObject.Parse("{\"type\": \"object\"}");
+                                ((JArray)swagger["paths"][instancePath]["put"]["parameters"]).Add(bodyParam);
+                                ((JArray)swagger["paths"][instancePath]["put"]["parameters"]).Add(SwaggerParameter("id", "path", "string", null, true));
+                            }
 
-                        if (interaction.Contains("create") && (interactionList.Contains("all") || interactionList.Contains("create")))
-                        {
-                            swagger["paths"][typePath]["post"] = SwaggerOperation();
-                            JObject bodyParam = SwaggerParameter("body", "body");
-                            bodyParam["schema"] = JObject.Parse("{\"type\": \"object\"}");
-                            ((JArray)swagger["paths"][typePath]["post"]["parameters"]).Add(bodyParam);
-                        }
-
-                        if (interaction.Contains("update") && (interactionList.Contains("all") || interactionList.Contains("update")))
-                        {
-                            swagger["paths"][instancePath]["put"] = SwaggerOperation();
-                            JObject bodyParam = SwaggerParameter("body", "body");
-                            bodyParam["schema"] = JObject.Parse("{\"type\": \"object\"}");
-                            ((JArray)swagger["paths"][instancePath]["put"]["parameters"]).Add(bodyParam);
-                            ((JArray)swagger["paths"][instancePath]["put"]["parameters"]).Add(SwaggerParameter("id", "path", "string", null, true));
-                        }
-
-                        if (interaction.Contains("delete") && (interactionList.Contains("all") || interactionList.Contains("delete")))
-                        {
-                            swagger["paths"][instancePath]["delete"] = SwaggerOperation();
-                            ((JArray)swagger["paths"][instancePath]["delete"]["parameters"]).Add(SwaggerParameter("id", "path", "string", null, true));
+                            if (interaction.Contains("delete") && (interactionList.Contains("all") || interactionList.Contains("delete")))
+                            {
+                                swagger["paths"][instancePath]["delete"] = SwaggerOperation();
+                                ((JArray)swagger["paths"][instancePath]["delete"]["parameters"]).Add(SwaggerParameter("id", "path", "string", null, true));
+                            }
                         }
                     }
                 }
